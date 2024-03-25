@@ -9,10 +9,24 @@ It is used to compare the performance of the `ToLower` function in the `strings`
 To run the benchmark, execute the following command:
 
 ```bash
-go test -bench=.
+go test -v -run=^$ -bench=B -benchmem -count=4
 ```
 
 ## Sample benchmark results
+
+### Apple M2 Max
+
+| Benchmark                              | Runs     | ns/op    | B/op   | allocs/op |
+|----------------------------------------|----------|----------|--------|-----------|
+| BenchmarkUtilsToLowerLowerCase-24      | 21361324 | 57.02875 | 72     | 3         |
+| BenchmarkUtilsToLowerMixedCase-24      | 21229658 | 55.845   | 72     | 3         |
+| BenchmarkStringsToLowerLowerCase-24    | 20870026 | 56.7175  | 0      | 0         |
+| BenchmarkStringsToLowerMixedCase-24    | 8877739  | 134.175  | 72     | 3         |
+| BenchmarkHybribToLowerLowerCase-24     | 46797721 | 25.13    | 0      | 0         |
+| BenchmarkHybribToLowerMixedCase-24     | 17746766 | 66.52    | 72     | 3         |
+
+
+### Intel Xeon X5675
 
 | Benchmark                              | Runs     | ns/op    | B/op   | allocs/op |
 |----------------------------------------|----------|----------|--------|-----------|

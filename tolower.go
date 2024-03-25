@@ -15,7 +15,7 @@ func main() {
 	_ = ToLowerStrings("https://example.com")
 	_ = HybribToLower("https://example.com")
 
-	fmt.Println("To run the benchmarks, use the following command:", "go test -bench .")
+	fmt.Println("To run the benchmarks, use the following command:", "go test -v -run=^$ -bench=B -benchmem -count=4")
 }
 
 func ToLowerUtils(s string) string {
