@@ -18,24 +18,24 @@ go test -v -run=^$ -bench=B -benchmem -count=4
 
 | Benchmark                              | Runs     | ns/op    | B/op   | allocs/op |
 |----------------------------------------|----------|----------|--------|-----------|
-| BenchmarkUtilsToLowerLowerCase-24      | 21361324 | 57.02875 | 72     | 3         |
-| BenchmarkUtilsToLowerMixedCase-24      | 21229658 | 55.845   | 72     | 3         |
-| BenchmarkStringsToLowerLowerCase-24    | 20870026 | 56.7175  | 0      | 0         |
-| BenchmarkStringsToLowerMixedCase-24    | 8877739  | 134.175  | 72     | 3         |
-| BenchmarkHybribToLowerLowerCase-24     | 46797721 | 25.13    | 0      | 0         |
-| BenchmarkHybribToLowerMixedCase-24     | 17746766 | 66.52    | 72     | 3         |
+| BenchmarkUtilsToLowerLowerCase-12      | 20728723.25 | 55.4275 | 72     | 3         |
+| BenchmarkUtilsToLowerMixedCase-12      | 21040876.5  | 55.43   | 72     | 3         |
+| BenchmarkStringsToLowerLowerCase-12    | 20979590.25 | 55.2825 | 0      | 0         |
+| BenchmarkStringsToLowerMixedCase-12    | 8903027.75  | 132.175 | 72     | 3         |
+| BenchmarkHybribToLowerLowerCase-12     | 48373012.75 | 23.72   | 0      | 0         |
+| BenchmarkHybribToLowerMixedCase-12     | 17928221.5  | 65.115  | 72     | 3         |
 
 
 ### Intel Xeon X5675
 
 | Benchmark                              | Runs     | ns/op    | B/op   | allocs/op |
 |----------------------------------------|----------|----------|--------|-----------|
-| BenchmarkUtilsToLowerLowerCase-24      | 6193549  | 186.3    | 72     | 3         |
-| BenchmarkUtilsToLowerMixedCase-24      | 6520929  | 183.1    | 72     | 3         |
-| BenchmarkStringsToLowerLowerCase-24    | 9680548  | 121.3    | 0      | 0         |
-| BenchmarkStringsToLowerMixedCase-24    | 3345157  | 357.8    | 72     | 3         |
-| BenchmarkHybribToLowerLowerCase-24     | 13733870 | 86.15    | 0      | 0         |
-| BenchmarkHybribToLowerMixedCase-24     | 4968349  | 237.4    | 72     | 3         |
+| BenchmarkUtilsToLowerLowerCase-24      | 6282977.75 | 187.925 | 72     | 3         |
+| BenchmarkUtilsToLowerMixedCase-24      | 6369836.25 | 187.525 | 72     | 3         |
+| BenchmarkStringsToLowerLowerCase-24    | 9776561.5  | 121.625 | 0      | 0         |
+| BenchmarkStringsToLowerMixedCase-24    | 3359413.75 | 353.325 | 72     | 3         |
+| BenchmarkHybribToLowerLowerCase-24     | 15111381.25 | 76.72   | 0      | 0         |
+| BenchmarkHybribToLowerMixedCase-24     | 5217725   | 227.8    | 72     | 3         |
 
 ## Conclusion
 
