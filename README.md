@@ -1,4 +1,4 @@
-# gofiber_tolower_test
+# fiber_tolower_test
 
 This repository contains a simple benchmark test for the `ToLower` function in the `strings` package and the `ToLower` function in the `utils` package of the `fiber` web framework.
 
