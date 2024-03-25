@@ -36,3 +36,9 @@ go test -v -run=^$ -bench=B -benchmem -count=4
 | BenchmarkStringsToLowerMixedCase-24    | 3345157  | 357.8    | 72     | 3         |
 | BenchmarkHybribToLowerLowerCase-24     | 13733870 | 86.15    | 0      | 0         |
 | BenchmarkHybribToLowerMixedCase-24     | 4968349  | 237.4    | 72     | 3         |
+
+## Conclusion
+
+Hybrid approach ported to gofiber utils package as `IfToLower` and `IfToUpper` functions.
+
+PR [#76](https://github.com/gofiber/utils/pull/76)
