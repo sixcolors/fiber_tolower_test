@@ -47,7 +47,7 @@ PR [#76](https://github.com/gofiber/utils/pull/76)
 
 ## Enhanced Performance of `HybridToLower` Function
 
-The `HybridToLower` function for has been optimized to improve performance, particularly when handling HTTP header values such as the "Referer" header, which frequently contain lengthy URLs, where the initial part of the string is often in lowercase with uppercase characters appearing later in the path component.
+The `HybridToLower` function for has been optimized to improve performance, particularly when handling HTTP header values such as the "Referer" header, which can contain lengthy URLs, where the initial part of the string is often in lowercase with uppercase characters appearing later in the path component.
 
 The optimization strategy involves utilizing the same index variable across both loops within the function. The first loop scans the string for any uppercase characters. If it finds any, it breaks, and the index variable retains its current position. The second loop then commences from this index, eliminating the need to reiterate over the initial part of the string already confirmed to be in lowercase. This approach significantly enhances performance for long strings that commence with an extended sequence of lowercase characters, such as URLs.
 
