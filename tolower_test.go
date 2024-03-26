@@ -84,7 +84,7 @@ func BenchmarkStringsToLowerMixedCase(b *testing.B) {
 	}
 }
 
-func BenchmarkHybribToLowerLowerCase(b *testing.B) {
+func BenchmarkHybridToLowerLowerCase(b *testing.B) {
 	origins := []string{
 		"https://example.com",
 		"https://www.example.org",
@@ -99,12 +99,12 @@ func BenchmarkHybribToLowerLowerCase(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		for _, origin := range origins {
-			_ = HybribToLower(origin)
+			_ = HybridToLower(origin)
 		}
 	}
 }
 
-func BenchmarkHybribToLowerMixedCase(b *testing.B) {
+func BenchmarkHybridToLowerMixedCase(b *testing.B) {
 	origins := []string{
 		"https://Example.com",
 		"https://www.Example.org",
@@ -119,7 +119,7 @@ func BenchmarkHybribToLowerMixedCase(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		for _, origin := range origins {
-			_ = HybribToLower(origin)
+			_ = HybridToLower(origin)
 		}
 	}
 }
