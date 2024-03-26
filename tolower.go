@@ -48,7 +48,8 @@ const (
 // `ToLower` function, but slower than the GoFiber Utils `ToLower` function.
 func HybribToLower(s string) string {
 	hasUpper := false
-	for i := 0; i < len(s); i++ {
+	var i int
+	for i = 0; i < len(s); i++ {
 		c := s[i]
 		if toLowerTable[c] != c {
 			hasUpper = true
@@ -59,9 +60,10 @@ func HybribToLower(s string) string {
 	if !hasUpper {
 		return s
 	}
+
 	res := make([]byte, len(s))
 	copy(res, s)
-	for i := 0; i < len(res); i++ {
+	for ; i < len(res); i++ {
 		res[i] = toLowerTable[res[i]]
 	}
 
