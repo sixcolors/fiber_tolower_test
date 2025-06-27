@@ -1285,34 +1285,34 @@ func BenchmarkToLowerComparison(b *testing.B) {
 		name string
 		fn   func(string) string
 	}{
-		// {"ToLowerUtils", ToLowerUtils},
-		// {"ToLowerStrings", ToLowerStrings},
-		// {"HybridToLower", HybridToLower},
-		// {"ToLower", ToLower},
-		// {"OptimalToLower", OptimalToLower},
-		// {"ToLowerSWARString", ToLowerSWARString},
-		// {"ToLowerSWARv2String", ToLowerSWARv2String},
-		// {"ToLowerUnsafeString", ToLowerUnsafeString},
-		// {"ToLowerGabyString", ToLowerGabyString},
-		// {"ToLowerInPlaceString", ToLowerInPlaceString},
-		// {"SuperToLower", SuperToLower},
-		// {"ToLowerHeader", ToLowerHeader},
-		// {"ToLowerAsmString", ToLowerAsmString},
-		// {"OptimalToLowerAsm", OptimalToLowerAsm},
+		{"ToLowerUtils", ToLowerUtils},
+		{"ToLowerStrings", ToLowerStrings},
+		{"HybridToLower", HybridToLower},
+		{"ToLower", ToLower},
+		{"OptimalToLower", OptimalToLower},
+		{"ToLowerSWARString", ToLowerSWARString},
+		{"ToLowerSWARv2String", ToLowerSWARv2String},
+		{"ToLowerUnsafeString", ToLowerUnsafeString},
+		{"ToLowerGabyString", ToLowerGabyString},
+		{"ToLowerInPlaceString", ToLowerInPlaceString},
+		{"SuperToLower", SuperToLower},
+		{"ToLowerHeader", ToLowerHeader},
+		{"ToLowerAsmString", ToLowerAsmString},
+		{"OptimalToLowerAsm", OptimalToLowerAsm},
 	}
 
 	byteFuncs := []struct {
 		name string
 		fn   func([]byte) []byte
 	}{
-		// {"ToLowerSWAR", ToLowerSWAR},
-		// {"ToLowerSWARv2", ToLowerSWARv2},
-		// {"ToLowerUnsafe", ToLowerUnsafe},
-		// {"ToLowerGaby", ToLowerGaby},
-		// {"ToLowerInPlace", ToLowerInPlace},
-		// {"ToLowerSWAREnhanced", ToLowerSWAREnhanced},
-		// {"ToLowerInPlaceOptimized", ToLowerInPlaceOptimized},
-		// {"ToLowerInPlaceOptimizedAsm", ToLowerInPlaceOptimizedAsm},
+		{"ToLowerSWAR", ToLowerSWAR},
+		{"ToLowerSWARv2", ToLowerSWARv2},
+		{"ToLowerUnsafe", ToLowerUnsafe},
+		{"ToLowerGaby", ToLowerGaby},
+		{"ToLowerInPlace", ToLowerInPlace},
+		{"ToLowerSWAREnhanced", ToLowerSWAREnhanced},
+		{"ToLowerInPlaceOptimized", ToLowerInPlaceOptimized},
+		{"ToLowerInPlaceOptimizedAsm", ToLowerInPlaceOptimizedAsm},
 	}
 
 	byteNoReturnFuncs := []struct {
