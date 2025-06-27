@@ -136,6 +136,7 @@ func TestToLowerFunctions(t *testing.T) {
 		{"ToLowerUnsafeString", ToLowerUnsafeString},
 		{"ToLowerGaby", ToLowerGabyString},
 		{"OptimalToLower", OptimalToLower},
+		{"ToLowerAsmString", ToLowerAsmString},
 	}
 
 	for _, f := range funcs {
@@ -1023,6 +1024,7 @@ func TestToLowerComparison(t *testing.T) {
 		{"HybridToLower", HybridToLower},
 		{"ToLower", ToLower},
 		{"OptimalToLower", OptimalToLower},
+		{"ToLowerAsmString", ToLowerAsmString},
 		{"ToLowerSWARString", ToLowerSWARString},
 		{"ToLowerSWARv2String", ToLowerSWARv2String},
 		{"ToLowerUnsafeString", ToLowerUnsafeString},
@@ -1045,6 +1047,13 @@ func TestToLowerComparison(t *testing.T) {
 		{"ToLowerInPlaceOptimized", ToLowerInPlaceOptimized},
 	}
 
+	byteNoReturnFuncs := []struct {
+		name string
+		fn   func([]byte)
+	}{
+		{"ToLowerAsm", ToLowerAsm},
+	}
+
 	// Test all string functions
 	for _, tc := range testCases {
 		for _, fn := range stringFuncs {
@@ -1063,6 +1072,16 @@ func TestToLowerComparison(t *testing.T) {
 			t.Run(fn.name+"_"+tc.name, func(t *testing.T) {
 				input := []byte(tc.in)
 				got := string(fn.fn(input))
+				if got != tc.want {
+					t.Errorf("%s(%q) = %q; want %q", fn.name, tc.in, got, tc.want)
+				}
+			})
+		}
+		for _, fn := range byteNoReturnFuncs {
+			t.Run(fn.name+"_"+tc.name, func(t *testing.T) {
+				input := []byte(tc.in)
+				fn.fn(input)
+				got := string(input)
 				if got != tc.want {
 					t.Errorf("%s(%q) = %q; want %q", fn.name, tc.in, got, tc.want)
 				}
@@ -1104,6 +1123,7 @@ func TestToLowerBoundaryConditions(t *testing.T) {
 		fn   func(string) string
 	}{
 		{"OptimalToLower", OptimalToLower},
+		{"ToLowerAsmString", ToLowerAsmString},
 		{"ToLowerInPlaceString", ToLowerInPlaceString},
 		{"SuperToLower", SuperToLower},
 	}
@@ -1207,6 +1227,7 @@ func TestToLowerMalformedUTF8(t *testing.T) {
 	}{
 		{"ToLowerSWARString", ToLowerSWARString},
 		{"OptimalToLower", OptimalToLower},
+		{"ToLowerAsmString", ToLowerAsmString},
 		{"ToLowerUnsafeString", ToLowerUnsafeString},
 		{"SuperToLower", SuperToLower},
 	}
@@ -1271,6 +1292,7 @@ func BenchmarkToLowerComparison(b *testing.B) {
 		{"ToLowerInPlaceString", ToLowerInPlaceString},
 		{"SuperToLower", SuperToLower},
 		{"ToLowerHeader", ToLowerHeader},
+		{"ToLowerAsmString", ToLowerAsmString},
 	}
 
 	byteFuncs := []struct {
@@ -1286,6 +1308,13 @@ func BenchmarkToLowerComparison(b *testing.B) {
 		{"ToLowerInPlaceOptimized", ToLowerInPlaceOptimized},
 	}
 
+	byteNoReturnFuncs := []struct {
+		name string
+		fn   func([]byte)
+	}{
+		{"ToLowerAsm", ToLowerAsm},
+	}
+
 	for _, tc := range testCases {
 		for _, fn := range stringFuncs {
 			b.Run(fn.name+"_"+tc.name, func(b *testing.B) {
@@ -1299,6 +1328,14 @@ func BenchmarkToLowerComparison(b *testing.B) {
 				input := []byte(tc.in)
 				for i := 0; i < b.N; i++ {
 					_ = fn.fn(input)
+				}
+			})
+		}
+		for _, fn := range byteNoReturnFuncs {
+			b.Run(fn.name+"_"+tc.name, func(b *testing.B) {
+				input := []byte(tc.in)
+				for i := 0; i < b.N; i++ {
+					fn.fn(input)
 				}
 			})
 		}

@@ -652,3 +652,45 @@ func ToLowerInPlaceOptimized(b []byte) []byte {
 
 	return b
 }
+
+// --- Experimental Assembly Optimizations ---
+
+func ToLowerAsmString(s string) string {
+	if len(s) == 0 {
+		return s
+	}
+
+	// Check if already lowercase
+	hasUpper := false
+	for i := 0; i < min(32, len(s)); i++ {
+		if s[i] >= 'A' && s[i] <= 'Z' {
+			hasUpper = true
+			break
+		}
+	}
+
+	if !hasUpper {
+		// Quick sample check didn't find uppercase
+		for i := 32; i < len(s); i++ {
+			if s[i] >= 'A' && s[i] <= 'Z' {
+				hasUpper = true
+				break
+			}
+		}
+		if !hasUpper {
+			return s // Already lowercase, return original
+		}
+	}
+
+	// Convert to lowercase using assembly
+	b := []byte(s)
+	ToLowerAsm(b)
+	return string(b)
+}
+
+//go:noescape
+func ToLowerAsm(b []byte)
+
+// The following files need to be created separately:
+// tolower_arm64.s - Apple Silicon (M1/M2/M3/M4) implementation
+// tolower_amd64.s - Intel/AMD x86-64 implementation
