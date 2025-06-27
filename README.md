@@ -1,3 +1,40 @@
+# Expiremental Branch for Gaby:
+
+# High-Performance ASCII ToLower for Go
+
+This repository is a deep dive into creating and benchmarking highly optimized ASCII `ToLower` functions for Go, with a focus on performance for the GoFiber web framework. The goal was to explore various techniques, including Go-based SWAR (SIMD-Within-A-Register) and architecture-specific assembly, to find the absolute fastest implementations.
+
+## Impressions
+
+After extensive experimentation and benchmarking, I've written some optimal functions that serve different use cases:
+
+1.  **For `string` conversion: `OptimalToLowerAsm`**
+    This is the recommended function for general-purpose `string` to `string` conversion. It is both allocation-aware and extremely fast.
+    - It performs a quick check to see if the string contains any uppercase characters. If not, it returns the original string immediately, incurring **zero allocations**.
+    - If conversion is needed, it uses the highly optimized assembly core (`ToLowerAsm`) for maximum performance.
+
+2.  **For in-place `[]byte` conversion: `ToLowerInPlaceOptimizedAsm`**
+    This is the fastest possible function for converting a byte slice in-place, making it ideal for performance-critical internal operations where no allocations are allowed.
+    - It performs a fast check for uppercase characters and returns immediately if none are found.
+    - If conversion is needed, it calls the `ToLowerAsm` assembly routine to modify the slice in-place.
+
+3. **For `string` conversion without assembly: `OptimalToLower`**
+   This function takes a **SWAR (SIMD-Within-A-Register)** approach in pure Go, making it suitable for environments where assembly is not an option. It is still highly efficient and performs well for most use cases.
+
+4. **For in-place `[]byte` conversion without assembly: `ToLowerInPlaceOptimized`**
+   This function is the pure Go equivalent of `ToLowerInPlaceOptimizedAsm`, using a SWAR technique to convert a byte slice in-place without any assembly code. It is designed for environments where assembly cannot be used, while still providing good performance.
+
+The other functions are still in the project and perhaps the techniques can be combined or serve for further optimizations and learning.
+
+## Assembly Implementations
+
+This project provides hand-tuned assembly for the two most common server architectures:
+
+-   **ARM64 (Apple Silicon, etc.):** Implemented using a **SWAR (SIMD-Within-A-Register)** technique. This branchless approach uses 64-bit general-purpose registers to process 8 bytes at a time.
+-   **AMD64 (Intel/AMD):** Implemented using **SSE2** instructions. This version processes 16-byte chunks and features loop unrolling and data prefetching for maximum throughput.
+
+# Non-Updated README.md from main branch
+
 # fiber_tolower_test
 
 This repository contains a simple benchmark test for the `ToLower` function in the `strings` package and the `ToLower` function in the `utils` package of the `fiber` web framework.
