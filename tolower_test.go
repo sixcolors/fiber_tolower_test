@@ -1032,6 +1032,7 @@ func TestToLowerComparison(t *testing.T) {
 		{"ToLowerInPlaceString", ToLowerInPlaceString},
 		{"SuperToLower", SuperToLower},
 		{"ToLowerHeader", ToLowerHeader},
+		{"OptimalToLowerAsm", OptimalToLowerAsm},
 	}
 
 	byteFuncs := []struct {
@@ -1045,6 +1046,7 @@ func TestToLowerComparison(t *testing.T) {
 		{"ToLowerInPlace", ToLowerInPlace},
 		{"ToLowerSWAREnhanced", ToLowerSWAREnhanced},
 		{"ToLowerInPlaceOptimized", ToLowerInPlaceOptimized},
+		{"ToLowerInPlaceOptimizedAsm", ToLowerInPlaceOptimizedAsm},
 	}
 
 	byteNoReturnFuncs := []struct {
@@ -1270,6 +1272,9 @@ func BenchmarkToLowerComparison(b *testing.B) {
 		{"all uppercase", "ABCDEFGHIJKLMNOPQRSTUVWXYZ"},
 		{"mixed case", "AbCdEfGhIjKlMnOpQrStUvWxYz"},
 		{"mixed case with non-letters", "Hello, World! 123"},
+		{"long lowercase", strings.Repeat("a", 1000)},
+		{"long uppercase", strings.Repeat("A", 1000)},
+		{"long mixed case", strings.Repeat("AbC", 333) + "D"},
 		{"HTTP Headers", "Content-Type: application/json"},
 		{"URL with mixed case", "https://Example.COM/Path?Query=Value"},
 		{"URL", "https://Example.COM/Path?Query=Value"},
@@ -1280,32 +1285,34 @@ func BenchmarkToLowerComparison(b *testing.B) {
 		name string
 		fn   func(string) string
 	}{
-		{"ToLowerUtils", ToLowerUtils},
-		{"ToLowerStrings", ToLowerStrings},
-		{"HybridToLower", HybridToLower},
-		{"ToLower", ToLower},
-		{"OptimalToLower", OptimalToLower},
-		{"ToLowerSWARString", ToLowerSWARString},
-		{"ToLowerSWARv2String", ToLowerSWARv2String},
-		{"ToLowerUnsafeString", ToLowerUnsafeString},
-		{"ToLowerGabyString", ToLowerGabyString},
-		{"ToLowerInPlaceString", ToLowerInPlaceString},
-		{"SuperToLower", SuperToLower},
-		{"ToLowerHeader", ToLowerHeader},
-		{"ToLowerAsmString", ToLowerAsmString},
+		// {"ToLowerUtils", ToLowerUtils},
+		// {"ToLowerStrings", ToLowerStrings},
+		// {"HybridToLower", HybridToLower},
+		// {"ToLower", ToLower},
+		// {"OptimalToLower", OptimalToLower},
+		// {"ToLowerSWARString", ToLowerSWARString},
+		// {"ToLowerSWARv2String", ToLowerSWARv2String},
+		// {"ToLowerUnsafeString", ToLowerUnsafeString},
+		// {"ToLowerGabyString", ToLowerGabyString},
+		// {"ToLowerInPlaceString", ToLowerInPlaceString},
+		// {"SuperToLower", SuperToLower},
+		// {"ToLowerHeader", ToLowerHeader},
+		// {"ToLowerAsmString", ToLowerAsmString},
+		// {"OptimalToLowerAsm", OptimalToLowerAsm},
 	}
 
 	byteFuncs := []struct {
 		name string
 		fn   func([]byte) []byte
 	}{
-		{"ToLowerSWAR", ToLowerSWAR},
-		{"ToLowerSWARv2", ToLowerSWARv2},
-		{"ToLowerUnsafe", ToLowerUnsafe},
-		{"ToLowerGaby", ToLowerGaby},
-		{"ToLowerInPlace", ToLowerInPlace},
-		{"ToLowerSWAREnhanced", ToLowerSWAREnhanced},
-		{"ToLowerInPlaceOptimized", ToLowerInPlaceOptimized},
+		// {"ToLowerSWAR", ToLowerSWAR},
+		// {"ToLowerSWARv2", ToLowerSWARv2},
+		// {"ToLowerUnsafe", ToLowerUnsafe},
+		// {"ToLowerGaby", ToLowerGaby},
+		// {"ToLowerInPlace", ToLowerInPlace},
+		// {"ToLowerSWAREnhanced", ToLowerSWAREnhanced},
+		// {"ToLowerInPlaceOptimized", ToLowerInPlaceOptimized},
+		// {"ToLowerInPlaceOptimizedAsm", ToLowerInPlaceOptimizedAsm},
 	}
 
 	byteNoReturnFuncs := []struct {

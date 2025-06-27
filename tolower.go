@@ -655,6 +655,59 @@ func ToLowerInPlaceOptimized(b []byte) []byte {
 
 // --- Experimental Assembly Optimizations ---
 
+// OptimalToLowerAsm combines the best attributes of all implementations:
+// - Fast early-out for already lowercase strings
+// - Algorithm selection based on input length
+// - SWAR processing for optimal performance on longer strings
+func OptimalToLowerAsm(s string) string {
+	// Handle trivial cases
+	switch len(s) {
+	case 0:
+		return ""
+	case 1:
+		c := s[0]
+		if c >= 'A' && c <= 'Z' {
+			return string(c | 0x20)
+		}
+		return s
+	}
+
+	// For longer strings, use IndexFunc which has internal optimizations
+	// to check for any uppercase characters before proceeding.
+	if strings.IndexFunc(s, func(r rune) bool { return r >= 'A' && r <= 'Z' }) == -1 {
+		return s // No uppercase letters, return original string
+	}
+
+	// If we reach here, it means we need to convert the string.
+	// We must allocate a new byte slice as strings are immutable.
+	b := make([]byte, len(s))
+	copy(b, s)
+
+	// Use the fastest available in-place conversion.
+	ToLowerAsm(b)
+
+	return utils.UnsafeString(b)
+}
+
+func ToLowerInPlaceOptimizedAsm(b []byte) []byte {
+	hasUpper := false
+	for i := 0; i < len(b); i++ {
+		if b[i] >= 'A' && b[i] <= 'Z' {
+			hasUpper = true
+			break
+		}
+	}
+
+	if !hasUpper {
+		return b
+	}
+
+	// If we found an uppercase character, run the highly optimized
+	// assembly version to convert the entire slice.
+	ToLowerAsm(b)
+	return b
+}
+
 func ToLowerAsmString(s string) string {
 	if len(s) == 0 {
 		return s
