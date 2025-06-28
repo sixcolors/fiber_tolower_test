@@ -147,21 +147,11 @@ func OptimalToLower(s string) string {
 			copy(res, s[:i])
 			res[i] = c | 0x20
 
-			// Process the rest - choose algorithm based on remaining length
+			// Process the rest with offset-based SWAR
 			remaining := len(s) - i - 1
-			if remaining > 64 {
-				remainder := res[i+1:]
-				copy(remainder, s[i+1:])
-				ToLowerSWAR(remainder)
-			} else {
-				for j := i + 1; j < len(s); j++ {
-					c := s[j]
-					if c >= 'A' && c <= 'Z' {
-						res[j] = c | 0x20
-					} else {
-						res[j] = c
-					}
-				}
+			if remaining > 0 {
+				copy(res[i+1:], s[i+1:])
+				ToLowerSWARWithOffset(res, i+1, remaining)
 			}
 			return utils.UnsafeString(res)
 		}
@@ -293,6 +283,36 @@ func ToLowerSWAR(b []byte) []byte {
 		}
 	}
 	return b
+}
+
+func ToLowerSWARWithOffset(b []byte, offset, length int) {
+	if length <= 0 {
+		return
+	}
+
+	endPos := offset + length
+	i := offset
+
+	// Process 8-byte chunks
+	for ; i+8 <= endPos; i += 8 {
+		chunk := *(*uint64)(unsafe.Pointer(&b[i]))
+
+		// SWAR magic to identify uppercase ASCII letters
+		geA := chunk + (0x8080808080808080 - 0x4141414141414141)
+		leZ := chunk + (0x8080808080808080 - 0x5B5B5B5B5B5B5B5B)
+		mask := (geA & ^leZ) & 0x8080808080808080
+		lowercase := (mask >> 2) & 0x2020202020202020
+
+		*(*uint64)(unsafe.Pointer(&b[i])) = chunk | lowercase
+	}
+
+	// Process remaining bytes
+	for ; i < endPos; i++ {
+		c := b[i]
+		if c >= 'A' && c <= 'Z' {
+			b[i] = c | 0x20
+		}
+	}
 }
 
 func ToLowerSWARv2String(s string) string {
@@ -703,26 +723,27 @@ func OptimalToLowerAsm(s string) string {
 		return s
 	}
 
-	// Find first uppercase
+	// Find the first uppercase letter (lazy allocation approach)
 	for i := 0; i < len(s); i++ {
 		c := s[i]
 		if c >= 'A' && c <= 'Z' {
-			// Found uppercase - allocate and convert
+			// Found first uppercase letter - allocate and start conversion
 			res := make([]byte, len(s))
-			copy(res, s[:i])
-			res[i] = c | 0x20
+			copy(res, s[:i])  // Copy already processed part
+			res[i] = c | 0x20 // Convert the first uppercase char
 
-			// Process the rest with assembly
+			// Process the remaining portion with offset-based assembly
 			if i+1 < len(s) {
-				remainder := res[i+1:]
-				copy(remainder, s[i+1:])
-				ToLowerAsm(remainder)
+				remaining := len(s) - i - 1
+				copy(res[i+1:], s[i+1:])
+				ToLowerAsmWithOffset(res, i+1, remaining)
 			}
 			return utils.UnsafeString(res)
 		}
 	}
 
-	return s // Already lowercase
+	// No uppercase found
+	return s
 }
 
 func ToLowerInPlaceOptimizedAsm(b []byte) []byte {
@@ -777,9 +798,20 @@ func ToLowerAsmString(s string) string {
 	return string(b)
 }
 
-//go:noescape
-func ToLowerAsm(b []byte)
+func ToLowerAsm(b []byte) {
+	if len(b) == 0 {
+		return
+	}
 
-// The following files need to be created separately:
+	// Call the assembly function to convert the byte slice in-place
+	// This function is expected to be implemented in assembly for optimal performance
+	ToLowerAsmWithOffset(b, 0, len(b))
+}
+
+//go:noescape
+func ToLowerAsmWithOffset(b []byte, offset, length int)
+
+// The following files need to be implemented in assembly for optimal performance:
 // tolower_arm64.s - Apple Silicon (M1/M2/M3/M4) implementation
 // tolower_amd64.s - Intel/AMD x86-64 implementation
+// TODO: Other architectures (e.g., ARMv7, x86, RISC-V) can be added if needed

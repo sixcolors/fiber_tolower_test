@@ -1,15 +1,19 @@
-// ARM64 optimized SWAR (SIMD-within-a-register) implementation for Go Assembler
-// Cache-line aligned processing: 64, 32, 16, 8 bytes
+// ARM64 optimized implementation with offset support
 #include "textflag.h"
 
-// func ToLowerAsm(buf []byte)
-TEXT ·ToLowerAsm(SB), NOSPLIT, $0-24
+// func ToLowerAsmWithOffset(buf []byte, offset int, length int)
+TEXT ·ToLowerAsmWithOffset(SB), NOSPLIT, $0-32
     MOVD    buf_data+0(FP), R0      // R0 = pointer to buf
-    MOVD    buf_len+8(FP), R1       // R1 = length of buf
+    MOVD    buf_len+8(FP), R9       // R9 = full buffer length (unused)
+    MOVD    offset+16(FP), R2       // R2 = starting offset
+    MOVD    length+24(FP), R1       // R1 = length to process
     
-    // Early return if empty
+    // Early return if length is zero
     CBZ     R1, done
-
+    
+    // Apply offset to data pointer
+    ADD     R2, R0, R0              // R0 now points to the first byte we should process
+    
     // Create constants for the SWAR calculation
     MOVD    $0x4141414141414141, R2   // 'A' repeated
     MOVD    $0x5A5A5A5A5A5A5A5A, R3   // 'Z' repeated
