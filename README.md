@@ -8,6 +8,9 @@ This repository is a deep dive into creating and benchmarking highly optimized A
 
 After extensive experimentation and benchmarking, I've written some optimal functions that serve different use cases:
 
+0. **For `string` conversion: `UltimateToLower`**
+    This function is the culmination of all optimizations, combining the best techniques from both Go and assembly implementations. It is designed to be the fastest possible `string` to `string` conversion function in Go, while still being allocation-aware.
+
 1.  **For `string` conversion: `OptimalToLowerAsm`**
     This is the recommended function for general-purpose `string` to `string` conversion. It is both allocation-aware and extremely fast.
     - It performs a quick check to see if the string contains any uppercase characters. If not, it returns the original string immediately, incurring **zero allocations**.

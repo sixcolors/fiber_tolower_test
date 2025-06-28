@@ -71,6 +71,45 @@ func HybridToLower(s string) string {
 	return utils.UnsafeString(res)
 }
 
+func UltimateToLower(s string) string {
+	if len(s) == 0 {
+		return s
+	}
+
+	// Find the first uppercase letter (lazy allocation approach)
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if c >= 'A' && c <= 'Z' {
+			// Found first uppercase letter - allocate and start conversion
+			res := make([]byte, len(s))
+			copy(res, s[:i])  // Copy already processed part
+			res[i] = c | 0x20 // Convert the first uppercase char
+
+			// For the remaining portion, use the most efficient processor
+			if len(s)-i > 64 {
+				// For larger remaining chunks, use assembly
+				remainder := res[i+1:]
+				copy(remainder, s[i+1:])
+				ToLowerAsm(remainder)
+			} else {
+				// For smaller chunks, simple loop is faster
+				for j := i + 1; j < len(s); j++ {
+					c := s[j]
+					if c >= 'A' && c <= 'Z' {
+						res[j] = c | 0x20
+					} else {
+						res[j] = c
+					}
+				}
+			}
+			return utils.UnsafeString(res)
+		}
+	}
+
+	// No uppercase found
+	return s
+}
+
 // func OptimalToLower(s string) string {
 // 	// First check if any conversion needed (like HybridToLower)
 // 	// If needed, use SWAR implementation for the conversion
@@ -95,54 +134,64 @@ func HybridToLower(s string) string {
 // - Algorithm selection based on input length
 // - SWAR processing for optimal performance on longer strings
 func OptimalToLower(s string) string {
-	// Handle trivial cases
-	switch len(s) {
-	case 0:
+	if len(s) == 0 {
 		return s
-	case 1:
-		return string(ToLowerByte(s[0]))
 	}
 
-	// Optimize check for strings that are already lowercase
-	// For short strings (<32 bytes), check directly
-	if len(s) < 32 {
-		hasUpper := false
-		for i := 0; i < len(s); i++ {
-			c := s[i]
-			if c >= 'A' && c <= 'Z' {
-				hasUpper = true
-				break
-			}
-		}
-		if !hasUpper {
-			return s
-		}
-	} else {
-		// For longer strings, use IndexFunc which has internal optimizations
-		if strings.IndexFunc(s, func(r rune) bool {
-			return r >= 'A' && r <= 'Z'
-		}) == -1 {
-			return s
-		}
-	}
+	// Find first uppercase character
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if c >= 'A' && c <= 'Z' {
+			// Found uppercase - allocate and convert
+			res := make([]byte, len(s))
+			copy(res, s[:i])
+			res[i] = c | 0x20
 
-	// Select algorithm based on string length
-	if len(s) <= 32 {
-		// For short strings, avoid overhead of SWAR
-		res := make([]byte, len(s))
-		for i := 0; i < len(s); i++ {
-			c := s[i]
-			if c >= 'A' && c <= 'Z' {
-				res[i] = c | 0x20
+			// Process the rest - choose algorithm based on remaining length
+			remaining := len(s) - i - 1
+			if remaining > 64 {
+				remainder := res[i+1:]
+				copy(remainder, s[i+1:])
+				ToLowerSWAR(remainder)
 			} else {
-				res[i] = c
+				for j := i + 1; j < len(s); j++ {
+					c := s[j]
+					if c >= 'A' && c <= 'Z' {
+						res[j] = c | 0x20
+					} else {
+						res[j] = c
+					}
+				}
 			}
+			return utils.UnsafeString(res)
 		}
-		return utils.UnsafeString(res)
 	}
 
-	// For longer strings, use SWAR for best performance
-	return utils.UnsafeString(ToLowerSWAR([]byte(s)))
+	return s // Already lowercase
+}
+
+func ContainsUppercaseSIMD(s string) bool {
+	// Use SIMD to scan 16/32/64 bytes at once
+	// Return early on first uppercase detection
+	if len(s) < 8 {
+		return false
+	}
+
+	for i := 0; i <= len(s)-8; i += 8 {
+		// Get pointer to string data at offset i
+		stringPtr := unsafe.Pointer(unsafe.StringData(s))
+		chunk := *(*uint64)(unsafe.Pointer(uintptr(stringPtr) + uintptr(i)))
+
+		// SWAR operations to detect uppercase letters (A-Z)
+		geA := chunk + (0x8080808080808080 - 0x4141414141414141)
+		leZ := chunk + (0x8080808080808080 - 0x5B5B5B5B5B5B5B5B)
+		mask := (geA & ^leZ) & 0x8080808080808080
+
+		if mask != 0 {
+			return true // Found an uppercase letter
+		}
+	}
+	return false
 }
 
 func ToLowerGabyString(s string) string {
@@ -483,56 +532,46 @@ func ToLowerSWAREnhanced(b []byte) []byte {
 // - SWAR processing for longer strings
 // - Branchless operations where beneficial
 func SuperToLower(s string) string {
-	// Handle trivial cases
-	if len(s) <= 1 {
-		if len(s) == 0 {
-			return s
-		}
-		return string(ToLowerByte(s[0]))
+	if len(s) == 0 {
+		return s
 	}
 
-	// Improved early detection of uppercase characters
-	// Only sample a portion of the string for very long strings
-	sampleLimit := min(len(s), 64)
-	hasUpper := false
+	// Find first uppercase with early exit strategy
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if c >= 'A' && c <= 'Z' {
+			// Allocate only when needed
+			res := make([]byte, len(s))
+			copy(res, s[:i])
+			res[i] = c | 0x20
 
-	for i := 0; i < sampleLimit; i++ {
-		if s[i] >= 'A' && s[i] <= 'Z' {
-			hasUpper = true
-			break
-		}
-	}
-
-	// If no uppercase in sample and string is long, use IndexFunc for full check
-	if !hasUpper && len(s) > 64 {
-		if strings.IndexFunc(s[sampleLimit:], func(r rune) bool {
-			return r >= 'A' && r <= 'Z'
-		}) == -1 {
-			return s
-		}
-		hasUpper = true
-	} else if !hasUpper {
-		return s // No uppercase in short string
-	}
-
-	// Choose algorithm based on length
-	if len(s) <= 24 {
-		// For very short strings, the overhead of SWAR isn't worth it
-		res := make([]byte, len(s))
-		for i := 0; i < len(s); i++ {
-			c := s[i]
-			// Use byte mask for branchless lowercase conversion
-			mask := byte(0)
-			if c >= 'A' && c <= 'Z' {
-				mask = 0x20
+			remaining := len(s) - i - 1
+			if remaining > 128 {
+				// Use SWAR for large remaining chunks
+				remainder := res[i+1:]
+				copy(remainder, s[i+1:])
+				ToLowerSWAREnhanced(remainder)
+			} else if remaining > 32 {
+				// Use SWAR for medium chunks
+				remainder := res[i+1:]
+				copy(remainder, s[i+1:])
+				ToLowerSWAR(remainder)
+			} else {
+				// Use direct conversion for small chunks
+				for j := i + 1; j < len(s); j++ {
+					c := s[j]
+					if c >= 'A' && c <= 'Z' {
+						res[j] = c | 0x20
+					} else {
+						res[j] = c
+					}
+				}
 			}
-			res[i] = c | mask
+			return utils.UnsafeString(res)
 		}
-		return utils.UnsafeString(res)
 	}
 
-	// For longer strings, SWAR is the fastest approach
-	return utils.UnsafeString(ToLowerSWAREnhanced([]byte(s)))
+	return s // Already lowercase
 }
 
 // ToLowerHeader is optimized specifically for HTTP headers
@@ -660,33 +699,30 @@ func ToLowerInPlaceOptimized(b []byte) []byte {
 // - Algorithm selection based on input length
 // - SWAR processing for optimal performance on longer strings
 func OptimalToLowerAsm(s string) string {
-	// Handle trivial cases
-	switch len(s) {
-	case 0:
-		return ""
-	case 1:
-		c := s[0]
-		if c >= 'A' && c <= 'Z' {
-			return string(c | 0x20)
-		}
+	if len(s) == 0 {
 		return s
 	}
 
-	// For longer strings, use IndexFunc which has internal optimizations
-	// to check for any uppercase characters before proceeding.
-	if strings.IndexFunc(s, func(r rune) bool { return r >= 'A' && r <= 'Z' }) == -1 {
-		return s // No uppercase letters, return original string
+	// Find first uppercase
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if c >= 'A' && c <= 'Z' {
+			// Found uppercase - allocate and convert
+			res := make([]byte, len(s))
+			copy(res, s[:i])
+			res[i] = c | 0x20
+
+			// Process the rest with assembly
+			if i+1 < len(s) {
+				remainder := res[i+1:]
+				copy(remainder, s[i+1:])
+				ToLowerAsm(remainder)
+			}
+			return utils.UnsafeString(res)
+		}
 	}
 
-	// If we reach here, it means we need to convert the string.
-	// We must allocate a new byte slice as strings are immutable.
-	b := make([]byte, len(s))
-	copy(b, s)
-
-	// Use the fastest available in-place conversion.
-	ToLowerAsm(b)
-
-	return utils.UnsafeString(b)
+	return s // Already lowercase
 }
 
 func ToLowerInPlaceOptimizedAsm(b []byte) []byte {

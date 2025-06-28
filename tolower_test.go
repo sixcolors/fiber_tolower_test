@@ -1033,6 +1033,7 @@ func TestToLowerComparison(t *testing.T) {
 		{"SuperToLower", SuperToLower},
 		{"ToLowerHeader", ToLowerHeader},
 		{"OptimalToLowerAsm", OptimalToLowerAsm},
+		{"UltimateToLower", UltimateToLower},
 	}
 
 	byteFuncs := []struct {
@@ -1299,6 +1300,7 @@ func BenchmarkToLowerComparison(b *testing.B) {
 		{"ToLowerHeader", ToLowerHeader},
 		{"ToLowerAsmString", ToLowerAsmString},
 		{"OptimalToLowerAsm", OptimalToLowerAsm},
+		{"UltimateToLower", UltimateToLower},
 	}
 
 	byteFuncs := []struct {
