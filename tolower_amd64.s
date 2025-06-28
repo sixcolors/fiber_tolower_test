@@ -13,16 +13,15 @@ GLOBL masks<>(SB), (RODATA+NOPTR), $48
 // func ToLowerAsmWithOffset(buf []byte, offset int, length int)
 TEXT ·ToLowerAsmWithOffset(SB), NOSPLIT, $0-32
     MOVQ    buf_data+0(FP), DI      // DI = pointer to buf
-    MOVQ    buf_len+8(FP), BX       // BX = full length of buf (unused)
-    MOVQ    offset+16(FP), R8       // R8 = starting offset
-    MOVQ    length+24(FP), CX       // CX = length to process
+    MOVQ    offset+24(FP), SI       // SI = offset
+    MOVQ    length+32(FP), CX       // CX = length to process
+
+    // Adjust the pointer by offset
+    ADDQ    SI, DI
 
     // Skip empty buffers
     TESTQ   CX, CX
     JZ      done
-    
-    // Apply offset to data pointer
-    ADDQ    R8, DI                  // DI now points to the first byte we should process
 
     // Load constants into SSE registers
     MOVOU   masks<>+0(SB), X2       // X2 contains 'A'-1
