@@ -10,8 +10,8 @@ DATA masks<>+32(SB)/8, $0x2020202020202020
 DATA masks<>+40(SB)/8, $0x2020202020202020 // 0x20 repeated for 16 bytes
 GLOBL masks<>(SB), (RODATA+NOPTR), $48
 
-// func ToLowerAsmWithOffset(buf []byte, offset int, length int)
-TEXT ·ToLowerAsmWithOffset(SB), NOSPLIT, $0-32
+// func toLowerAsmWithOffset(buf []byte, offset int, length int)
+TEXT ·toLowerAsmWithOffset(SB), NOSPLIT, $0-40
     MOVQ    buf_data+0(FP), DI      // DI = pointer to buf
     MOVQ    offset+24(FP), SI       // SI = offset
     MOVQ    length+32(FP), CX       // CX = length to process

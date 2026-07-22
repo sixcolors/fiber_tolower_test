@@ -1,23 +1,11 @@
 package tolower
 
 import (
-	"fmt"
 	"strings"
 	"unsafe"
 
 	"github.com/gofiber/utils/v2"
 )
-
-func main() {
-	fmt.Println("This file is used to demonstrate the usage of benchmarks.", "Please refer to the main_test.go file for the actual benchmarks.")
-
-	// Do some work with the functions to avoid "declared and not used" errors
-	_ = ToLowerUtils("https://example.com")
-	_ = ToLowerStrings("https://example.com")
-	_ = HybridToLower("https://example.com")
-
-	fmt.Println("To run the benchmarks, use the following command:", "go test -v -run=^$ -bench=B -benchmem -count=4")
-}
 
 func ToLowerUtils(s string) string {
 	return utils.ToLower(s)
@@ -110,6 +98,65 @@ func UltimateToLower(s string) string {
 	return s
 }
 
+func SuperFastToLower(s string) string {
+	n := len(s)
+	if n == 0 {
+		return s
+	}
+
+	if n == 1 {
+		c := s[0]
+		if c >= 'A' && c <= 'Z' {
+			return string(c | 0x20)
+		}
+		return s
+	}
+
+	index := -1
+	i := 0
+
+	if n >= 8 {
+		p := unsafe.Pointer(unsafe.StringData(s))
+		for ; i+8 <= n; i += 8 {
+			chunk := *(*uint64)(unsafe.Pointer(uintptr(p) + uintptr(i)))
+			geA := chunk + (0x8080808080808080 - 0x4141414141414141)
+			leZ := chunk + (0x8080808080808080 - 0x5B5B5B5B5B5B5B5B)
+			if m := (geA &^ leZ) & 0x8080808080808080; m != 0 {
+				for j := 0; j < 8; j++ {
+					if s[i+j] >= 'A' && s[i+j] <= 'Z' {
+						index = i + j
+						break
+					}
+				}
+				break
+			}
+		}
+	}
+
+	if index == -1 {
+		for ; i < n; i++ {
+			if s[i] >= 'A' && s[i] <= 'Z' {
+				index = i
+				break
+			}
+		}
+		if index == -1 {
+			return s
+		}
+	}
+
+	res := make([]byte, n)
+	copy(res, s[:index])
+	res[index] = s[index] | 0x20
+
+	if remaining := n - index - 1; remaining > 0 {
+		copy(res[index+1:], s[index+1:])
+		ToLowerSWARWithOffset(res, index+1, remaining)
+	}
+
+	return utils.UnsafeString(res)
+}
+
 // func OptimalToLower(s string) string {
 // 	// First check if any conversion needed (like HybridToLower)
 // 	// If needed, use SWAR implementation for the conversion
@@ -161,24 +208,22 @@ func OptimalToLower(s string) string {
 }
 
 func ContainsUppercaseSIMD(s string) bool {
-	// Use SIMD to scan 16/32/64 bytes at once
-	// Return early on first uppercase detection
-	if len(s) < 8 {
-		return false
-	}
-
-	for i := 0; i <= len(s)-8; i += 8 {
-		// Get pointer to string data at offset i
+	n := len(s)
+	i := 0
+	for ; i+8 <= n; i += 8 {
 		stringPtr := unsafe.Pointer(unsafe.StringData(s))
 		chunk := *(*uint64)(unsafe.Pointer(uintptr(stringPtr) + uintptr(i)))
-
-		// SWAR operations to detect uppercase letters (A-Z)
 		geA := chunk + (0x8080808080808080 - 0x4141414141414141)
 		leZ := chunk + (0x8080808080808080 - 0x5B5B5B5B5B5B5B5B)
-		mask := (geA & ^leZ) & 0x8080808080808080
-
+		mask := (geA &^ leZ) & 0x8080808080808080
 		if mask != 0 {
-			return true // Found an uppercase letter
+			return true
+		}
+	}
+	for ; i < n; i++ {
+		c := s[i]
+		if c >= 'A' && c <= 'Z' {
+			return true
 		}
 	}
 	return false
@@ -286,7 +331,7 @@ func ToLowerSWAR(b []byte) []byte {
 }
 
 func ToLowerSWARWithOffset(b []byte, offset, length int) {
-	if length <= 0 {
+	if offset < 0 || length <= 0 || offset > len(b) || length > len(b)-offset {
 		return
 	}
 
@@ -497,21 +542,6 @@ func ToLowerInPlace(b []byte) []byte {
 
 // ToLowerSWAREnhanced combines superior SWAR implementation with early exit
 func ToLowerSWAREnhanced(b []byte) []byte {
-	// Quick check for uppercase characters with early exit
-	// This helps avoid the overhead of SWAR setup for already lowercase strings
-	hasUpper := false
-	quickCheckLimit := min(len(b), 32) // Only check a sample to reduce overhead
-	for i := 0; i < quickCheckLimit; i++ {
-		if b[i] >= 'A' && b[i] <= 'Z' {
-			hasUpper = true
-			break
-		}
-	}
-
-	if !hasUpper && len(b) < 128 { // Skip full SWAR for small already lowercase strings
-		return b
-	}
-
 	n := len(b)
 	i := 0
 
@@ -795,7 +825,7 @@ func ToLowerAsmString(s string) string {
 	// Convert to lowercase using assembly
 	b := []byte(s)
 	ToLowerAsm(b)
-	return string(b)
+	return utils.UnsafeString(b)
 }
 
 func ToLowerAsm(b []byte) {
@@ -808,8 +838,19 @@ func ToLowerAsm(b []byte) {
 	ToLowerAsmWithOffset(b, 0, len(b))
 }
 
+// ToLowerAsmWithOffset converts b[offset:offset+length] in place (ASCII A–Z).
+// Invalid ranges are no-ops (safe for callers).
+func ToLowerAsmWithOffset(b []byte, offset, length int) {
+	if offset < 0 || length <= 0 || offset > len(b) || length > len(b)-offset {
+		return
+	}
+	toLowerAsmWithOffset(b, offset, length)
+}
+
+// implemented in tolower_amd64.s / tolower_arm64.s / tolower_stub.go
+//
 //go:noescape
-func ToLowerAsmWithOffset(b []byte, offset, length int)
+func toLowerAsmWithOffset(b []byte, offset, length int)
 
 // The following files need to be implemented in assembly for optimal performance:
 // tolower_arm64.s - Apple Silicon (M1/M2/M3/M4) implementation

@@ -1,4 +1,4 @@
-# Expiremental Branch for Gaby:
+# Experimental Branch for Gaby:
 
 # High-Performance ASCII ToLower for Go
 

@@ -136,6 +136,7 @@ func TestToLowerFunctions(t *testing.T) {
 		{"ToLowerUnsafeString", ToLowerUnsafeString},
 		{"ToLowerGaby", ToLowerGabyString},
 		{"OptimalToLower", OptimalToLower},
+		{"SuperFastToLower", SuperFastToLower},
 		{"ToLowerAsmString", ToLowerAsmString},
 	}
 
@@ -148,6 +149,7 @@ func TestToLowerFunctions(t *testing.T) {
 		}
 	}
 }
+
 func BenchmarkToLowerSWARMixedCase(b *testing.B) {
 	origins := []string{
 		"https://Example.com",
@@ -336,6 +338,7 @@ func TestToLowerEdgeCases(t *testing.T) {
 		}
 	}
 }
+
 func BenchmarkHybridToLowerMixedCase(b *testing.B) {
 	origins := []string{
 		"https://Example.com",
@@ -529,6 +532,7 @@ func BenchmarkOptimalToLowerLowerCase(b *testing.B) {
 		}
 	}
 }
+
 func BenchmarkOptimalToLowerMixedCase(b *testing.B) {
 	origins := []string{
 		"https://Example.com",
@@ -564,6 +568,7 @@ func BenchmarkToLowerSWARv2LowerCase(b *testing.B) {
 		}
 	}
 }
+
 func BenchmarkToLowerSWARv2MixedCase(b *testing.B) {
 	origins := []string{
 		"https://Example.com",
@@ -599,6 +604,7 @@ func BenchmarkToLowerInPlaceStringLowerCase(b *testing.B) {
 		}
 	}
 }
+
 func BenchmarkToLowerInPlaceStringMixedCase(b *testing.B) {
 	origins := []string{
 		"https://Example.com",
@@ -1060,6 +1066,10 @@ func TestToLowerComparison(t *testing.T) {
 	// Test all string functions
 	for _, tc := range testCases {
 		for _, fn := range stringFuncs {
+			if tc.name == "Edge cases" && fn.name == "ToLowerStrings" {
+				// strings.ToLower is Unicode-aware and may normalize invalid UTF-8 differently.
+				continue
+			}
 			t.Run(fn.name+"_"+tc.name, func(t *testing.T) {
 				got := fn.fn(tc.in)
 				if got != tc.want {
@@ -1260,6 +1270,65 @@ func TestToLowerMalformedUTF8(t *testing.T) {
 	}
 }
 
+func TestToLowerAsmWithOffset(t *testing.T) {
+	in := []byte("XXXXHELLOXXXX")
+
+	// Convert only "HELLO" at offset 4, length 5.
+	ToLowerAsmWithOffset(in, 4, 5)
+
+	want := []byte("XXXXhelloXXXX")
+	if string(in) != string(want) {
+		t.Fatalf("got %q want %q", in, want)
+	}
+}
+
+func TestToLowerAsmWithOffsetBounds(t *testing.T) {
+	in := []byte("ABC")
+
+	// Invalid ranges must be no-ops and must not panic.
+	ToLowerAsmWithOffset(in, -1, 2)
+	ToLowerAsmWithOffset(in, 0, 0)
+	ToLowerAsmWithOffset(in, 3, 1)
+	ToLowerAsmWithOffset(in, 1, 100)
+
+	if string(in) != "ABC" {
+		t.Fatalf("bounds no-op failed: %q", in)
+	}
+}
+
+func TestContainsUppercaseSIMD(t *testing.T) {
+	cases := []struct {
+		in   string
+		want bool
+	}{
+		{"", false},
+		{"a", false},
+		{"A", true},
+		{"abcdefg", false},
+		{"abcdefG", true},
+		{"abcdefgh", false},
+		{"abcdefgH", true},
+		{"aaaaAAAAaaaa", true},
+	}
+
+	for _, c := range cases {
+		if got := ContainsUppercaseSIMD(c.in); got != c.want {
+			t.Errorf("ContainsUppercaseSIMD(%q)=%v want %v", c.in, got, c.want)
+		}
+	}
+}
+
+func TestToLowerSWAREnhancedLateUpper(t *testing.T) {
+	// Uppercase only after byte 32 and total length < 128.
+	b := []byte(strings.Repeat("a", 40) + "Z" + strings.Repeat("a", 40))
+	got := string(ToLowerSWAREnhanced(append([]byte(nil), b...)))
+	want := strings.Repeat("a", 40) + "z" + strings.Repeat("a", 40)
+
+	if got != want {
+		t.Fatalf("got %q want %q", got, want)
+	}
+}
+
 // Comprehensive benchmark for all ToLower functions
 func BenchmarkToLowerComparison(b *testing.B) {
 	testCases := []struct {
@@ -1287,41 +1356,43 @@ func BenchmarkToLowerComparison(b *testing.B) {
 		fn   func(string) string
 	}{
 		{"ToLowerUtils", ToLowerUtils},
-		{"ToLowerStrings", ToLowerStrings},
-		{"HybridToLower", HybridToLower},
-		{"ToLower", ToLower},
+		// {"ToLowerStrings", ToLowerStrings},
+		// {"HybridToLower", HybridToLower},
+		// {"ToLower", ToLower},
 		{"OptimalToLower", OptimalToLower},
-		{"ToLowerSWARString", ToLowerSWARString},
-		{"ToLowerSWARv2String", ToLowerSWARv2String},
-		{"ToLowerUnsafeString", ToLowerUnsafeString},
-		{"ToLowerGabyString", ToLowerGabyString},
-		{"ToLowerInPlaceString", ToLowerInPlaceString},
-		{"SuperToLower", SuperToLower},
-		{"ToLowerHeader", ToLowerHeader},
-		{"ToLowerAsmString", ToLowerAsmString},
-		{"OptimalToLowerAsm", OptimalToLowerAsm},
-		{"UltimateToLower", UltimateToLower},
+		{"SuperFastToLower", SuperFastToLower},
+		// {"SuperFastToLowerWithTable", SuperFastToLowerWithTable},
+		// {"ToLowerSWARString", ToLowerSWARString},
+		// {"ToLowerSWARv2String", ToLowerSWARv2String},
+		// {"ToLowerUnsafeString", ToLowerUnsafeString},
+		// {"ToLowerGabyString", ToLowerGabyString},
+		// {"ToLowerInPlaceString", ToLowerInPlaceString},
+		// {"SuperToLower", SuperToLower},
+		// {"ToLowerHeader", ToLowerHeader},
+		// {"ToLowerAsmString", ToLowerAsmString},
+		// {"OptimalToLowerAsm", OptimalToLowerAsm},
+		// {"UltimateToLower", UltimateToLower},
 	}
 
 	byteFuncs := []struct {
 		name string
 		fn   func([]byte) []byte
 	}{
-		{"ToLowerSWAR", ToLowerSWAR},
-		{"ToLowerSWARv2", ToLowerSWARv2},
-		{"ToLowerUnsafe", ToLowerUnsafe},
-		{"ToLowerGaby", ToLowerGaby},
-		{"ToLowerInPlace", ToLowerInPlace},
-		{"ToLowerSWAREnhanced", ToLowerSWAREnhanced},
-		{"ToLowerInPlaceOptimized", ToLowerInPlaceOptimized},
-		{"ToLowerInPlaceOptimizedAsm", ToLowerInPlaceOptimizedAsm},
+		// {"ToLowerSWAR", ToLowerSWAR},
+		// {"ToLowerSWARv2", ToLowerSWARv2},
+		// {"ToLowerUnsafe", ToLowerUnsafe},
+		// {"ToLowerGaby", ToLowerGaby},
+		// {"ToLowerInPlace", ToLowerInPlace},
+		// {"ToLowerSWAREnhanced", ToLowerSWAREnhanced},
+		// {"ToLowerInPlaceOptimized", ToLowerInPlaceOptimized},
+		// {"ToLowerInPlaceOptimizedAsm", ToLowerInPlaceOptimizedAsm},
 	}
 
 	byteNoReturnFuncs := []struct {
 		name string
 		fn   func([]byte)
 	}{
-		{"ToLowerAsm", ToLowerAsm},
+		// {"ToLowerAsm", ToLowerAsm},
 	}
 
 	for _, tc := range testCases {
